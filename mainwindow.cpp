@@ -13,7 +13,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     // table of passwords setup
     table = new QTableWidget(this);
     table->setColumnCount(6);
-    QStringList tableHeader{"Website", "User Name", "Password", "Remove", "Copy User Name", "Copy Password"};
+    QStringList tableHeader{"Website", "User Name", "Password", "Remove", " ", " "};
     table->setHorizontalHeaderLabels(tableHeader);
     table->setRowCount(0);
     table->setEditTriggers(QAbstractItemView::DoubleClicked);
@@ -112,12 +112,12 @@ void MainWindow::addRow()
     connect(removeButton, &QPushButton::clicked, this, &MainWindow::removeRow);
     table->setCellWidget(rowCount, 3, removeButton);
 
-    QPushButton *copyBButton = new QPushButton("Copy B");
+    QPushButton *copyBButton = new QPushButton("Copy User Name");
     copyBButton->setStyleSheet("background-color: darkblue; color: white;");
     connect(copyBButton, &QPushButton::clicked, this, &MainWindow::copyCellB);
     table->setCellWidget(rowCount, 4, copyBButton);
 
-    QPushButton *copyCButton = new QPushButton("Copy C");
+    QPushButton *copyCButton = new QPushButton("Copy Password");
     copyCButton->setStyleSheet("background-color: darkblue; color: white;");
     connect(copyCButton, &QPushButton::clicked, this, &MainWindow::copyCellC);
     table->setCellWidget(rowCount, 5, copyCButton);
