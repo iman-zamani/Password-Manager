@@ -29,7 +29,7 @@ private slots:
 private:
     QTableWidget *table;
     QPushButton *addRowButton;
-    QString filePath = "password.csv"; 
+    QString filePath = "password.txt"; 
 };
 
 #endif 

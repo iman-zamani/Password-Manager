@@ -9,8 +9,37 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+# Find Qt5Widgets
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
-add_executable(${PROJECT_NAME} main.cpp mainwindow.cpp mainwindow.h)
+# Attempt to find Crypto++ using pkg-config first
+find_package(PkgConfig QUIET)
+pkg_check_modules(CRYPTO_PP QUIET libcryptopp)
 
-target_link_libraries(${PROJECT_NAME} Qt5::Widgets)
+if(CRYPTO_PP_FOUND)
+    message(STATUS "Using Crypto++ from pkg-config")
+else()
+    # If pkg-config failed, try the conventional way
+    find_path(CRYPTOPP_INCLUDE_DIR NAMES cryptopp/cryptlib.h)
+    find_library(CRYPTOPP_LIBRARY NAMES cryptopp libcryptopp)
+
+    if(CRYPTOPP_INCLUDE_DIR AND CRYPTOPP_LIBRARY)
+        set(CRYPTO_PP_INCLUDE_DIRS ${CRYPTOPP_INCLUDE_DIR})
+        set(CRYPTO_PP_LIBRARIES ${CRYPTOPP_LIBRARY})
+        message(STATUS "Found Crypto++: ${CRYPTOPP_LIBRARY}")
+    else()
+        message(FATAL_ERROR "Crypto++ not found")
+    endif()
+endif()
+
+# Define the source files
+set(SOURCE_FILES main.cpp mainwindow.cpp mainwindow.h encrypt.cpp encrypt.h)
+
+# Add executable based on the source files
+add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+
+# Include directories for Crypto++
+include_directories(${CRYPTO_PP_INCLUDE_DIRS})
+
+# Linking against Qt5 and Crypto++
+target_link_libraries(${PROJECT_NAME} Qt5::Widgets ${CRYPTO_PP_LIBRARIES})

@@ -7,13 +7,13 @@
 #include <QMessageBox>
 #include <QFile>
 #include <QTextStream>
-
+#include "encrypt.h"
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
     // table of passwords setup
     table = new QTableWidget(this);
     table->setColumnCount(7);
-    QStringList tableHeader{"Website", "User Name", "Password", "Remove", " ", " "," "};
+    QStringList tableHeader{"Website", "User Name", "Password", " ", " ", " "," "};
     table->setHorizontalHeaderLabels(tableHeader);
     table->setRowCount(0);
     table->setEditTriggers(QAbstractItemView::DoubleClicked);
@@ -64,35 +64,47 @@ void MainWindow::closeEvent(QCloseEvent *event)
 }
 
 
-void MainWindow::saveTableData()
-{
-    // this function  will store the first 3 columns (website , user name and password)
+void MainWindow::saveTableData() {
     QFile file(filePath);
     if (file.open(QIODevice::WriteOnly)) {
         QTextStream stream(&file);
+        QString longString;
+
+        // Iterate over each row and column to build a single long string
         for (int i = 0; i < table->rowCount(); ++i) {
-            for (int j = 0; j < table->columnCount() - 3; ++j) { 
-                if (j > 0) stream << ",";
+            for (int j = 0; j < 3; ++j) {  
                 QTableWidgetItem *item = table->item(i, j);
                 if (item)
-                    stream << item->text();
+                    longString += item->text();
+                if (j < 2)  
+                    // using ';' as a cell separator
+                    longString += ";"; 
             }
-            stream << "\n";
+            if (i < table->rowCount() - 1)
+                // use '|' as a row separator
+                longString += "|";  
         }
+        
+        stream << longString;
         file.close();
     }
 }
 
-bool MainWindow::loadTableData()
-{
+bool MainWindow::loadTableData() {
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly))
         return false;
 
     QTextStream stream(&file);
-    while (!stream.atEnd()) {
-        QString line = stream.readLine();
-        QStringList values = line.split(",");
+     // read the entire file content into a single string
+    QString longString = stream.readAll(); 
+    file.close();
+    // split the string into rows
+    QStringList rows = longString.split("|");  
+
+    for (const QString &row : rows) {
+        // split each row into columns
+        QStringList values = row.split(";");  
         addRow();
         int lastRow = table->rowCount() - 1;
         for (int i = 0; i < values.size() && i < 3; ++i) {
@@ -100,9 +112,9 @@ bool MainWindow::loadTableData()
             table->setItem(lastRow, i, item);
         }
     }
-    file.close();
     return true;
 }
+
 void MainWindow::addRow()
 {
     int rowCount = table->rowCount();
