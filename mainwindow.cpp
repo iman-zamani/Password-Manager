@@ -1,3 +1,5 @@
+#include <iostream>
+#include <string>
 #include "mainwindow.h"
 #include <QVBoxLayout>
 #include <QApplication>
@@ -7,6 +9,7 @@
 #include <QMessageBox>
 #include <QFile>
 #include <QTextStream>
+#include <QInputDialog>
 #include "encrypt.h"
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
@@ -63,14 +66,54 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
 }
 
+std::string MainWindow::getUserPassword() {
+    // create new QInputDialog instance
+    QInputDialog inputDialog(this);
+    inputDialog.setModal(true); 
+    inputDialog.setLabelText(tr("Enter your password:"));
+    inputDialog.setWindowTitle(tr("Authentication"));
+    inputDialog.setTextEchoMode(QLineEdit::Password);
 
+    // set size and position
+    // get the size of the screen
+    QSize screenSize = this->screen()->size();  
+    int width = screenSize.width() / 4;
+    int height = screenSize.height() / 3;
+    int x = (screenSize.width() - width) / 2;
+    int y = (screenSize.height() - height) / 2;
+    inputDialog.resize(width, height);
+    inputDialog.move(x, y);
+
+    // check the response
+    bool ok = inputDialog.exec() == QDialog::Accepted;
+    QString password = inputDialog.textValue();
+
+    if (ok && !password.isEmpty()) {
+        return password.toStdString();
+    } else {
+        QMessageBox::warning(this, tr("Input Required"),
+                             tr("You must enter a password to proceed."));
+        return ""; 
+    }
+}
+
+void setStringToSpaces(std::string& str) {
+    for (char& c : str) {
+        c = ' ';  
+    }
+}
+void setQStringToSpaces(QString& qStr) {
+    qStr.fill(' ');  
+    qStr.clear();
+    qStr.squeeze();
+}
 void MainWindow::saveTableData() {
     QFile file(filePath);
     if (file.open(QIODevice::WriteOnly)) {
         QTextStream stream(&file);
         QString longString;
 
-        // Iterate over each row and column to build a single long string
+        // iterate over each row and column to build a single long string
         for (int i = 0; i < table->rowCount(); ++i) {
             for (int j = 0; j < 3; ++j) {  
                 QTableWidgetItem *item = table->item(i, j);
@@ -84,34 +127,54 @@ void MainWindow::saveTableData() {
                 // use '|' as a row separator
                 longString += "|";  
         }
-        
-        stream << longString;
+        //encrypt the text
+        std::string plainText = longString.toStdString();
+        std::string userPassword = getUserPassword();
+        std::string encodedCiphertextString = EncryptString(plainText,userPassword);
+        QString saveString = QString::fromStdString(encodedCiphertextString);
+        stream << saveString;
         file.close();
+        setStringToSpaces(plainText);
+        setStringToSpaces(userPassword);
+        setStringToSpaces(encodedCiphertextString);
+        setQStringToSpaces(longString);
     }
 }
 
 bool MainWindow::loadTableData() {
+    std::string userPassword = getUserPassword();
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly))
         return false;
 
     QTextStream stream(&file);
      // read the entire file content into a single string
-    QString longString = stream.readAll(); 
+    QString encodedCiphertextQString = stream.readAll(); 
     file.close();
+    std::string encodedCiphertextString = encodedCiphertextQString.toStdString();
+    // decryption of the file
+    std::string decodedCiphertextString = DecryptString(encodedCiphertextString,userPassword);
+    QString longString = QString::fromStdString(decodedCiphertextString);
     // split the string into rows
-    QStringList rows = longString.split("|");  
+    QStringList rows = longString.split("|");
+    setQStringToSpaces(longString);
 
-    for (const QString &row : rows) {
-        // split each row into columns
-        QStringList values = row.split(";");  
+    for (QString &row : rows) {
+        QStringList values = row.split(";");
         addRow();
         int lastRow = table->rowCount() - 1;
         for (int i = 0; i < values.size() && i < 3; ++i) {
-            QTableWidgetItem *item = new QTableWidgetItem(values.at(i));
+         QTableWidgetItem *item = new QTableWidgetItem(values.at(i));
+
+            setQStringToSpaces(values[i]);
+
             table->setItem(lastRow, i, item);
         }
+        setQStringToSpaces(row);
     }
+
+    setStringToSpaces(decodedCiphertextString);
+    
     return true;
 }
 

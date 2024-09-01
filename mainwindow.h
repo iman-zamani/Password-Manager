@@ -5,6 +5,8 @@
 #include <QTableWidget>
 #include <QPushButton>
 #include <QCloseEvent>
+#include <QInputDialog>
+#include <QString>
 
 class MainWindow : public QMainWindow
 {
@@ -16,7 +18,7 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *event) override; 
-
+     std::string getUserPassword();
 private slots:
     void addRow();
     void removeRow();
@@ -29,7 +31,7 @@ private slots:
 private:
     QTableWidget *table;
     QPushButton *addRowButton;
-    QString filePath = "password.txt"; 
+    QString filePath = "password.enc"; 
 };
 
 #endif 
