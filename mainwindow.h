@@ -20,8 +20,9 @@ protected:
 private slots:
     void addRow();
     void removeRow();
-    void copyCellB();
-    void copyCellC();
+    void copyUserNameButton();
+    void copyPasswordButton();
+    void generatePassword();
     void saveTableData();
     bool loadTableData();
 

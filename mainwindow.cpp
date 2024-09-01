@@ -12,8 +12,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
     // table of passwords setup
     table = new QTableWidget(this);
-    table->setColumnCount(6);
-    QStringList tableHeader{"Website", "User Name", "Password", "Remove", " ", " "};
+    table->setColumnCount(7);
+    QStringList tableHeader{"Website", "User Name", "Password", "Remove", " ", " "," "};
     table->setHorizontalHeaderLabels(tableHeader);
     table->setRowCount(0);
     table->setEditTriggers(QAbstractItemView::DoubleClicked);
@@ -112,17 +112,22 @@ void MainWindow::addRow()
     connect(removeButton, &QPushButton::clicked, this, &MainWindow::removeRow);
     table->setCellWidget(rowCount, 3, removeButton);
 
-    QPushButton *copyBButton = new QPushButton("Copy User Name");
-    copyBButton->setStyleSheet("background-color: darkblue; color: white;");
-    connect(copyBButton, &QPushButton::clicked, this, &MainWindow::copyCellB);
-    table->setCellWidget(rowCount, 4, copyBButton);
+    QPushButton *copyUserNameButton = new QPushButton("Copy User Name");
+    copyUserNameButton->setStyleSheet("background-color: darkblue; color: white;");
+    connect(copyUserNameButton, &QPushButton::clicked, this, &MainWindow::copyUserNameButton);
+    table->setCellWidget(rowCount, 4, copyUserNameButton);
 
-    QPushButton *copyCButton = new QPushButton("Copy Password");
-    copyCButton->setStyleSheet("background-color: darkblue; color: white;");
-    connect(copyCButton, &QPushButton::clicked, this, &MainWindow::copyCellC);
-    table->setCellWidget(rowCount, 5, copyCButton);
+    QPushButton *copyPasswordButton = new QPushButton("Copy Password");
+    copyPasswordButton->setStyleSheet("background-color: darkblue; color: white;");
+    connect(copyPasswordButton, &QPushButton::clicked, this, &MainWindow::copyPasswordButton);
+    table->setCellWidget(rowCount, 5, copyPasswordButton);
+
+    QPushButton *generatePassword = new QPushButton("Generate Password");
+    generatePassword->setStyleSheet("background-color: green; color: white;");
+    connect(generatePassword, &QPushButton::clicked, this, &MainWindow::generatePassword);
+    table->setCellWidget(rowCount, 6, generatePassword);
 }
-void MainWindow::copyCellB()
+void MainWindow::copyUserNameButton()
 {
     QPushButton *button = qobject_cast<QPushButton*>(sender());
     int row = table->indexAt(button->pos()).row();
@@ -135,7 +140,7 @@ void MainWindow::copyCellB()
     }
 }
 
-void MainWindow::copyCellC()
+void MainWindow::copyPasswordButton()
 {
     QPushButton *button = qobject_cast<QPushButton*>(sender());
     int row = table->indexAt(button->pos()).row();
@@ -146,6 +151,9 @@ void MainWindow::copyCellC()
             QApplication::clipboard()->setText(text);
         }
     }
+}
+void MainWindow::generatePassword(){
+
 }
 void MainWindow::removeRow()
 {
