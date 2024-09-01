@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <cstring> 
 #include "mainwindow.h"
 #include <QVBoxLayout>
 #include <QApplication>
@@ -41,7 +42,16 @@ MainWindow::~MainWindow()
 {
 
 }
-
+void setStringToSpaces(std::string& str) {
+    for (char& c : str) {
+        c = ' ';  
+    }
+}
+void setQStringToSpaces(QString& qStr) {
+    qStr.fill(' ');  
+    qStr.clear();
+    qStr.squeeze();
+}
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     // Set the main window as the parent of the QMessageBox for the cancel option 
@@ -67,15 +77,12 @@ void MainWindow::closeEvent(QCloseEvent *event)
 }
 
 std::string MainWindow::getUserPassword() {
-    // create new QInputDialog instance
     QInputDialog inputDialog(this);
     inputDialog.setModal(true); 
     inputDialog.setLabelText(tr("Enter your password:"));
     inputDialog.setWindowTitle(tr("Authentication"));
     inputDialog.setTextEchoMode(QLineEdit::Password);
 
-    // set size and position
-    // get the size of the screen
     QSize screenSize = this->screen()->size();  
     int width = screenSize.width() / 4;
     int height = screenSize.height() / 3;
@@ -84,29 +91,28 @@ std::string MainWindow::getUserPassword() {
     inputDialog.resize(width, height);
     inputDialog.move(x, y);
 
-    // check the response
     bool ok = inputDialog.exec() == QDialog::Accepted;
     QString password = inputDialog.textValue();
 
+    // attempt to clear memory
+    std::string stdPassword;
     if (ok && !password.isEmpty()) {
-        return password.toStdString();
+        stdPassword = password.toStdString();
+        // clear the QString password data
+        setQStringToSpaces(password);
+        return stdPassword;
     } else {
         QMessageBox::warning(this, tr("Input Required"),
                              tr("You must enter a password to proceed."));
         return ""; 
     }
+    // clear stdPassword
+    //std::memset(&stdPassword[0], 0, stdPassword.size());
+    //stdPassword.clear();
+    //setStringToSpaces(stdPassword);
+    return stdPassword;
 }
 
-void setStringToSpaces(std::string& str) {
-    for (char& c : str) {
-        c = ' ';  
-    }
-}
-void setQStringToSpaces(QString& qStr) {
-    qStr.fill(' ');  
-    qStr.clear();
-    qStr.squeeze();
-}
 void MainWindow::saveTableData() {
     QFile file(filePath);
     if (file.open(QIODevice::WriteOnly)) {
@@ -174,7 +180,7 @@ bool MainWindow::loadTableData() {
     }
 
     setStringToSpaces(decodedCiphertextString);
-    
+    setStringToSpaces(userPassword);
     return true;
 }
 
