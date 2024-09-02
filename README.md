@@ -74,13 +74,13 @@ Use `vcpkg` to install Crypto++ easily:
    ```cmd
    git clone https://github.com/Microsoft/vcpkg.git
    cd vcpkg
-   .\bootstrap-vcpkg.bat
-   .\vcpkg integrate install
+   ./bootstrap-vcpkg.sh
+   ./vcpkg.exe integrate install
    ```
 
 2. **Install Crypto++**:
    ```cmd
-   .\vcpkg install cryptopp:x64-windows
+   ./vcpkg install cryptopp:x64-windows
    ```
 
 ## Project Structure
