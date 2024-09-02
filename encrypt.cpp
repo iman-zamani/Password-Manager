@@ -9,9 +9,40 @@
 #include <cryptopp/sha.h>
 #include <cryptopp/osrng.h>
 #include <cryptopp/gcm.h>
+#include <cryptopp/secblock.h> 
 #include "encrypt.h"
-
 using namespace CryptoPP;
+
+
+std::string generateRandomPassword(size_t length) {
+
+    std::string chars = "abcdefghijklmnopqrstuvwxyz"
+                        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                        "0123456789"
+                        "!@#$%^&*()_+{}:<>,.?"; 
+    
+
+    // use secure memory handling
+    CryptoPP::SecByteBlock password(reinterpret_cast<const CryptoPP::byte*>(chars.data()), chars.size());
+    std::string result;
+    result.reserve(length);
+
+    // create a random number generator
+    CryptoPP::AutoSeededRandomPool rng;
+
+    // generate the password with no bias
+    CryptoPP::byte index;
+    for (size_t i = 0; i < length; ++i) {
+        do {
+            rng.GenerateBlock(&index, 1);
+        } while (index >= (256 - (256 % chars.size())));  // avoid modulo bias
+        result += chars[index % chars.size()];
+    }
+
+    // clear sensitive data from memory
+    memset(password.data(), 0, password.size());
+    return result;
+}
 
 // define a suitable IV size
 // 12 bytes is common for GCM to avoid the need for counter wrapping considerations

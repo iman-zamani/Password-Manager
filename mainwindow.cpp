@@ -233,9 +233,28 @@ void MainWindow::copyPasswordButton()
         }
     }
 }
-void MainWindow::generatePassword(){
+void MainWindow::generatePassword() {
+    QPushButton *button = qobject_cast<QPushButton*>(sender());
+    if (!button) return;
 
+    int row = table->indexAt(button->pos()).row();
+    int passwordColumn = 2;  // password is index 2
+
+    if (row != -1) {
+        QTableWidgetItem *item = table->item(row, passwordColumn);
+        if (!item) {
+            // If the item does not exist, create it
+            item = new QTableWidgetItem();
+            table->setItem(row, passwordColumn, item);
+        }
+        std::string temp = generateRandomPassword(40);
+        QString pass =  QString::fromStdString(temp);
+        item->setText(pass);
+        setStringToSpaces(temp);
+        setQStringToSpaces(pass);
+    }
 }
+
 void MainWindow::removeRow()
 {
     QPushButton *button = qobject_cast<QPushButton*>(sender());
