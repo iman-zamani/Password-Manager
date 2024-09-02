@@ -2,6 +2,8 @@
 
 A simple password manager application built for personal use. This app allows you to securely store and retrieve passwords for various accounts. It is designed with a focus on simplicity, security, and ease of use.
 
+![app screenshot](image.png)
+
 ## Features
 
 - **Secure password storage**: Uses advanced encryption to ensure that all passwords are stored securely.
