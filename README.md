@@ -1,4 +1,4 @@
-# Password-Manager 
+# Z-Vault
 
 A simple password manager application built for personal use. This app allows you to securely store and retrieve passwords for various accounts. It is designed with a focus on simplicity, security, and ease of use.
 
@@ -29,8 +29,8 @@ To build the project, follow these steps:
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/iman-zamani/Password-Manager.git
-   cd Password-Manager
+   git clone https://github.com/iman-zamani/Z-Vault.git
+   cd Z-Vault
    ```
 
 2. **Create a Build Directory**:
