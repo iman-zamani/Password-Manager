@@ -67,7 +67,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
     int ret = msgBox.exec();
 
     if (ret == QMessageBox::Yes) {
-        saveTableData();
+        saveTableData(event);
         event->accept(); // save and then close the app
     } else if (ret == QMessageBox::No) {
         event->accept();  // close the app 
@@ -112,43 +112,96 @@ std::string MainWindow::getUserPassword() {
     //setStringToSpaces(stdPassword);
     return stdPassword;
 }
-
-void MainWindow::saveTableData() {
+QString copyFileContent(const QString& filePath) {
     QFile file(filePath);
-    if (file.open(QIODevice::WriteOnly)) {
-        QTextStream stream(&file);
-        QString longString;
-
-        // iterate over each row and column to build a single long string
-        for (int i = 0; i < table->rowCount(); ++i) {
-            for (int j = 0; j < 3; ++j) {  
-                QTableWidgetItem *item = table->item(i, j);
-                if (item)
-                    longString += item->text();
-                if (j < 2)  
-                    // using ';' as a cell separator
-                    longString += ";"; 
-            }
-            if (i < table->rowCount() - 1)
-                // use '|' as a row separator
-                longString += "|";  
-        }
-        //encrypt the text
-        std::string plainText = longString.toStdString();
-        std::string userPassword = getUserPassword();
-        std::string encodedCiphertextString = EncryptString(plainText,userPassword);
-        QString saveString = QString::fromStdString(encodedCiphertextString);
-        stream << saveString;
-        file.close();
-        setStringToSpaces(plainText);
-        setStringToSpaces(userPassword);
-        setStringToSpaces(encodedCiphertextString);
-        setQStringToSpaces(longString);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return QString(); 
     }
+
+    QTextStream stream(&file);
+    QString contents = stream.readAll();
+    file.close(); 
+
+    return contents;
 }
+void MainWindow::saveTableData(QCloseEvent *event) {
+    QString copyFile = copyFileContent(filePath); // backup original file content in case of error
+    QFile file(filePath);
+
+    if (!file.open(QIODevice::WriteOnly)) {
+        QMessageBox::warning(this, tr("Save Error"), tr("Unable to open file for saving. Please check your permissions or disk space."));
+        return;
+    }
+
+    QTextStream stream(&file);
+    QString longString;
+
+    // iterate over each row and column to build a single long string
+    for (int i = 0; i < table->rowCount(); ++i) {
+        for (int j = 0; j < 3; ++j) { // Assuming you're only interested in the first three columns
+            QTableWidgetItem *item = table->item(i, j);
+            if (item) {
+                longString += item->text();
+                if (j < 2)
+                    longString += ";"; // using ';' as a cell separator
+            }
+            else {
+                longString += " ";
+                if (j < 2)
+                    longString += ";"; // using ';' as a cell separator
+            }
+        }
+        if (i < table->rowCount() - 1)
+            longString += "|"; // use '|' as a row separator
+    }
+
+    bool authenticated = false;
+    std::string enteredPassword;
+    for (int attempts = 0; attempts < 3; ++attempts) {
+        enteredPassword = getUserPassword();
+        if (enteredPassword.empty()) {
+            QMessageBox::warning(this, tr("Authentication Required"), tr("You must enter a password to proceed."));
+            continue;
+        }
+
+        if (checkPassword({reinterpret_cast<const unsigned char*>(enteredPassword.data()), enteredPassword.size()}, userPasswordHash, userSalt)) {
+            authenticated = true;
+            break;
+        } else {
+            QMessageBox::warning(this, tr("Authentication Failed"), tr("Incorrect password. Please try again."));
+        }
+    }
+
+    if (!authenticated) {
+        QMessageBox::warning(this, tr("Authentication Failed"), tr("Maximum retry attempts reached."));
+        stream << copyFile; // moving the content back to file (because the write method deleted it)
+        file.close();
+        return;
+    }
+
+    std::string plainText = longString.toStdString();
+    std::string encodedCiphertextString = EncryptString(plainText, enteredPassword);
+    QString saveString = QString::fromStdString(encodedCiphertextString);
+    stream << saveString;
+
+    file.close();
+    setStringToSpaces(plainText);
+    setStringToSpaces(enteredPassword);
+    setStringToSpaces(encodedCiphertextString);
+    setQStringToSpaces(longString);
+
+    QMessageBox::information(this, tr("Save Successful"), tr("Your data has been encrypted and saved."));
+}
+
 
 bool MainWindow::loadTableData() {
     std::string userPassword = getUserPassword();
+    // save hash
+    if (!userPassword.empty()) {
+        userSalt = generateSalt();
+        CryptoPP::SecByteBlock password(reinterpret_cast<const unsigned char*>(userPassword.data()), userPassword.size());
+        userPasswordHash = savePassword(password, userSalt);
+    }
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly))
         return false;
@@ -181,6 +234,7 @@ bool MainWindow::loadTableData() {
 
     setStringToSpaces(decodedCiphertextString);
     setStringToSpaces(userPassword);
+    memset(&userPassword[0], 0, userPassword.size()); 
     return true;
 }
 

@@ -118,3 +118,31 @@ std::string DecryptString(const std::string& encodedCiphertext, const std::strin
 
     return decryptedtext;
 }
+
+
+
+SecByteBlock generateSalt() {
+    AutoSeededRandomPool prng;
+    SecByteBlock salt(SHA256::DIGESTSIZE);
+    prng.GenerateBlock(salt, salt.size());
+    return salt;
+}
+
+std::string savePassword(const SecByteBlock& password, const SecByteBlock& salt) {
+    SHA256 hash;
+    std::string digest;
+
+    // Using a more secure password hashing approach
+    PKCS5_PBKDF2_HMAC<SHA256> pbkdf;
+    byte key[SHA256::DIGESTSIZE];
+    pbkdf.DeriveKey(key, sizeof(key), 0, password, password.size(), salt, salt.size(), 10000);
+
+    // Convert key to hex string
+    StringSource ss(key, sizeof(key), true, new HexEncoder(new StringSink(digest)));
+    return digest;
+}
+
+bool checkPassword(const SecByteBlock& password, const std::string& correct_hash, const SecByteBlock& salt) {
+    std::string new_hash = savePassword(password, salt);
+    return new_hash == correct_hash;
+}
