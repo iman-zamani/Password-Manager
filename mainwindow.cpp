@@ -138,10 +138,11 @@ void MainWindow::saveTableData(QCloseEvent *event) {
 
     // iterate over each row and column to build a single long string
     for (int i = 0; i < table->rowCount(); ++i) {
-        for (int j = 0; j < 3; ++j) { // Assuming you're only interested in the first three columns
+        for (int j = 0; j < 3; ++j) { 
             QTableWidgetItem *item = table->item(i, j);
             if (item) {
                 longString += item->text();
+                item->text() = " ";
                 if (j < 2)
                     longString += ";"; // using ';' as a cell separator
             }
@@ -190,7 +191,6 @@ void MainWindow::saveTableData(QCloseEvent *event) {
     setStringToSpaces(encodedCiphertextString);
     setQStringToSpaces(longString);
 
-    QMessageBox::information(this, tr("Save Successful"), tr("Your data has been encrypted and saved."));
 }
 
 
