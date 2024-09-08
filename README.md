@@ -51,7 +51,7 @@ To build the project, follow these steps:
 
 5. **Run the Application**:
    ```bash
-   ./Password-Generator
+   ./Z-Vault
    ```
 
 ## Installing Crypto++ Library
