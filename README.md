@@ -2,13 +2,21 @@
 
 A simple password manager application built for personal use. This app allows you to securely store and retrieve passwords for various accounts. It is designed with a focus on simplicity, security, and ease of use.
 
-![app screenshot](image.png)
+<div align="center">
+    <img src="icon.png" alt="app icon" width="300"/>
+</div>
+
 
 ## Features
 
 - **Secure password storage**: Uses advanced encryption to ensure that all passwords are stored securely.
 - **Minimalistic design**: Easy-to-use interface that does not compromise on functionality.
-- **Built with Qt 5**: Provides a robust framework for creating a native desktop experience.
+- **Memory cleanup on exit**: Automatically clears all password data from memory when the program closes, eliminating any potential security risks from leftover data in RAM.
+
+<div align="center">
+    <img src="image.png" alt="app icon" width="500"/>
+</div>
+
 
 ## Security Features
 
