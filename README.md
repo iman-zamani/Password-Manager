@@ -14,7 +14,7 @@ A simple password manager application built for personal use. This app allows yo
 - **Memory cleanup on exit**: Automatically clears all password data from memory when the program closes, eliminating any potential security risks from leftover data in RAM.
 
 <div align="center">
-    <img src="image.png" alt="app icon" width="500"/>
+    <img src="image.png" alt="app icon" width="900"/>
 </div>
 
 
