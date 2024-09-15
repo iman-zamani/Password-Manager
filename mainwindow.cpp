@@ -98,13 +98,18 @@ std::string MainWindow::getUserPassword() {
     std::string stdPassword;
     if (ok && !password.isEmpty()) {
         stdPassword = password.toStdString();
+        if (stdPassword == "INVALID"){
+            QMessageBox::warning(this, tr("Invalid Input"),
+                             tr("You must enter a valid password."));
+                             return "INVALID";
+        }
         // clear the QString password data
         setQStringToSpaces(password);
         return stdPassword;
     } else {
         QMessageBox::warning(this, tr("Input Required"),
                              tr("You must enter a password to proceed."));
-        return ""; 
+        return "INVALID"; 
     }
     // clear stdPassword
     //std::memset(&stdPassword[0], 0, stdPassword.size());
@@ -196,6 +201,10 @@ void MainWindow::saveTableData(QCloseEvent *event) {
 
 bool MainWindow::loadTableData() {
     std::string userPassword = getUserPassword();
+    // if the password was not entered or it was not acceptable 
+    if (userPassword == "INVALID"){
+        exit (1);
+    }
     // save hash
     if (!userPassword.empty()) {
         userSalt = generateSalt();
