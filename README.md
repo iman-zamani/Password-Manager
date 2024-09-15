@@ -24,6 +24,19 @@ A simple password manager application built for personal use. This app allows yo
 - **Key Derivation**: Passwords are encrypted using keys derived from user passwords with PBKDF2 (Password-Based Key Derivation Function 2) and HMAC-SHA256, enhancing the security against brute-force attacks.
 - **Secure Random Password Generation**: Includes a function to generate random passwords with high entropy, using Crypto++'s cryptographically secure random number generator.
 
+## Compatibility
+
+Z-Vault is designed to be cross-platform, with primary development on Linux using the X11 display server, which provides the optimal experience.
+
+### Known Compatibility:
+
+- **Linux**: 
+  - **X11**: Fully supported and recommended.
+  - **Wayland**: Supported and performs well, but some GUI elements may appear differently than intended. There are no current plans to address these graphical differences.
+
+- **Windows & macOS**: The application should function with appropriate setups, but has not been extensively tested on these platforms.
+
+
 ## Requirements
 
 - CMake 3.5 or higher
@@ -109,3 +122,4 @@ Contributions are welcome! If you'd like to contribute, please fork the reposito
 ## Contact
 
 For any questions or feedback, please reach out to `izamanimoghaddam@gmail.com`.
+
