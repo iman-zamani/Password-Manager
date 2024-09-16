@@ -39,6 +39,7 @@ private slots:
     void generatePassword();
     void saveTableData(QCloseEvent *event);
     bool loadTableData();
+    void searchTable(const QString &query);
 
 private:
     QTableWidget *table;
