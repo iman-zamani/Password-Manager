@@ -393,67 +393,158 @@ void MainWindow::removeRow(){
     }
 }
 void MainWindow::searchTable(const QString &query) {
-    QList<QPair<int, int>> matchingRows; // pair of (row index, relevance score)
+    QList<QPair<int, int>> matchingRows; // index, relevance
     QList<int> nonMatchingRows;
 
     // temporarily store all rows
     QList<QList<QTableWidgetItem*>> allRows;
 
-    // iterate through all rows
+    // store creation time for each row (for sorting )
+    QList<QPair<QDateTime, QList<QTableWidgetItem*>>> rowsWithTime;
+
     for (int i = 0; i < table->rowCount(); ++i) {
         QList<QTableWidgetItem*> rowItems;
         for (int col = 0; col < table->columnCount(); ++col) {
-            rowItems.append(table->takeItem(i, col)); // take the item from the table
+            rowItems.append(table->takeItem(i, col));
         }
+
+        // add creation time for sorting if necessary (column 7)
+        QTableWidgetItem *timeItem = rowItems.at(7); 
+        if (timeItem) {
+            QDateTime creationTime = QDateTime::fromString(timeItem->text(), Qt::ISODate);
+            rowsWithTime.append(QPair<QDateTime, QList<QTableWidgetItem*>>(creationTime, rowItems));
+        }
+
         allRows.append(rowItems);
     }
 
-    // clear all rows from the table
+    // clear all rows in table 
     table->setRowCount(0);
 
-    // process each row and calculate relevance
-    for (int i = 0; i < allRows.size(); ++i) {
-        QTableWidgetItem *websiteItem = allRows[i].at(0); // website in column 0
-        QTableWidgetItem *userItem = allRows[i].at(1);    // username in column 1
+    if (!query.isEmpty()) {
+        for (int i = 0; i < allRows.size(); ++i) {
+            QTableWidgetItem *websiteItem = allRows[i].at(0);  
+            QTableWidgetItem *userItem = allRows[i].at(1);     
 
-        int relevance = 0;
+            int relevance = 0;
 
-        if (websiteItem && websiteItem->text().contains(query, Qt::CaseInsensitive)) {
-            relevance += 1;
+            if (websiteItem && websiteItem->text().contains(query, Qt::CaseInsensitive)) {
+                relevance += 1;
+            }
+
+            if (userItem && userItem->text().contains(query, Qt::CaseInsensitive)) {
+                relevance += 1;
+            }
+
+            if (relevance > 0) {
+                matchingRows.append(QPair<int, int>(i, relevance));  
+            } else {
+                nonMatchingRows.append(i);  
+            }
         }
 
-        if (userItem && userItem->text().contains(query, Qt::CaseInsensitive)) {
-            relevance += 1;
+        // sort matching rows 
+        std::sort(matchingRows.begin(), matchingRows.end(), [](const QPair<int, int> &a, const QPair<int, int> &b) {
+            return a.second > b.second;
+        });
+
+        // insert matching rows 
+        for (const auto &rowPair : matchingRows) {
+            int rowIdx = rowPair.first;
+            int newRow = table->rowCount();
+            table->insertRow(newRow);
+
+            for (int col = 0; col < table->columnCount(); ++col) {
+                table->setItem(newRow, col, allRows[rowIdx].at(col));
+            }
+
+            // add buttons of each row
+            QPushButton *removeButton = new QPushButton("Remove Row");
+            removeButton->setStyleSheet("background-color: red;");
+            connect(removeButton, &QPushButton::clicked, this, &MainWindow::removeRow);
+            table->setCellWidget(newRow, 3, removeButton);
+
+            QPushButton *copyUserNameButton = new QPushButton("Copy User Name");
+            copyUserNameButton->setStyleSheet("background-color: darkblue; color: white;");
+            connect(copyUserNameButton, &QPushButton::clicked, this, &MainWindow::copyUserNameButton);
+            table->setCellWidget(newRow, 4, copyUserNameButton);
+
+            QPushButton *copyPasswordButton = new QPushButton("Copy Password");
+            copyPasswordButton->setStyleSheet("background-color: darkblue; color: white;");
+            connect(copyPasswordButton, &QPushButton::clicked, this, &MainWindow::copyPasswordButton);
+            table->setCellWidget(newRow, 5, copyPasswordButton);
+
+            QPushButton *generatePasswordButton = new QPushButton("Generate Password");
+            generatePasswordButton->setStyleSheet("background-color: green; color: white;");
+            connect(generatePasswordButton, &QPushButton::clicked, this, &MainWindow::generatePassword);
+            table->setCellWidget(newRow, 6, generatePasswordButton);
         }
 
-        if (relevance > 0) {
-            matchingRows.append(QPair<int, int>(i, relevance)); // store row index and relevance
-        } else {
-            nonMatchingRows.append(i); // store row index if not matching
+        // non-matching rows 
+        for (int rowIdx : nonMatchingRows) {
+            int newRow = table->rowCount();
+            table->insertRow(newRow);
+
+            for (int col = 0; col < table->columnCount(); ++col) {
+                table->setItem(newRow, col, allRows[rowIdx].at(col));
+            }
+
+            // add the buttons for non-matching rows 
+            QPushButton *removeButton = new QPushButton("Remove Row");
+            removeButton->setStyleSheet("background-color: red;");
+            connect(removeButton, &QPushButton::clicked, this, &MainWindow::removeRow);
+            table->setCellWidget(newRow, 3, removeButton);
+
+            QPushButton *copyUserNameButton = new QPushButton("Copy User Name");
+            copyUserNameButton->setStyleSheet("background-color: darkblue; color: white;");
+            connect(copyUserNameButton, &QPushButton::clicked, this, &MainWindow::copyUserNameButton);
+            table->setCellWidget(newRow, 4, copyUserNameButton);
+
+            QPushButton *copyPasswordButton = new QPushButton("Copy Password");
+            copyPasswordButton->setStyleSheet("background-color: darkblue; color: white;");
+            connect(copyPasswordButton, &QPushButton::clicked, this, &MainWindow::copyPasswordButton);
+            table->setCellWidget(newRow, 5, copyPasswordButton);
+
+            QPushButton *generatePasswordButton = new QPushButton("Generate Password");
+            generatePasswordButton->setStyleSheet("background-color: green; color: white;");
+            connect(generatePasswordButton, &QPushButton::clicked, this, &MainWindow::generatePassword);
+            table->setCellWidget(newRow, 6, generatePasswordButton);
         }
-    }
+    } else {
+        // sort by creation time if query is empty
+        std::sort(rowsWithTime.begin(), rowsWithTime.end(), [](const QPair<QDateTime, QList<QTableWidgetItem*>> &a, const QPair<QDateTime, QList<QTableWidgetItem*>> &b) {
+            return a.first < b.first;
+        });
 
-    // sort matching rows by relevance (descending)
-    std::sort(matchingRows.begin(), matchingRows.end(), [](const QPair<int, int> &a, const QPair<int, int> &b) {
-        return a.second > b.second;
-    });
+        
+        for (const auto &rowPair : rowsWithTime) {
+            int newRow = table->rowCount();
+            table->insertRow(newRow);
 
-    // reinsert matching rows first, sorted by relevance
-    for (const auto &rowPair : matchingRows) {
-        int rowIdx = rowPair.first;
-        int newRow = table->rowCount(); // add new row at the end
-        table->insertRow(newRow);
-        for (int col = 0; col < table->columnCount(); ++col) {
-            table->setItem(newRow, col, allRows[rowIdx].at(col)); // reinsert row items
-        }
-    }
+            for (int col = 0; col < table->columnCount(); ++col) {
+                table->setItem(newRow, col, rowPair.second.at(col));
+            }
 
-    // reinsert non-matching rows at the end
-    for (int rowIdx : nonMatchingRows) {
-        int newRow = table->rowCount(); // add new row at the end
-        table->insertRow(newRow);
-        for (int col = 0; col < table->columnCount(); ++col) {
-            table->setItem(newRow, col, allRows[rowIdx].at(col)); // reinsert row items
+            // add the buttons 
+            QPushButton *removeButton = new QPushButton("Remove Row");
+            removeButton->setStyleSheet("background-color: red;");
+            connect(removeButton, &QPushButton::clicked, this, &MainWindow::removeRow);
+            table->setCellWidget(newRow, 3, removeButton);
+
+            QPushButton *copyUserNameButton = new QPushButton("Copy User Name");
+            copyUserNameButton->setStyleSheet("background-color: darkblue; color: white;");
+            connect(copyUserNameButton, &QPushButton::clicked, this, &MainWindow::copyUserNameButton);
+            table->setCellWidget(newRow, 4, copyUserNameButton);
+
+            QPushButton *copyPasswordButton = new QPushButton("Copy Password");
+            copyPasswordButton->setStyleSheet("background-color: darkblue; color: white;");
+            connect(copyPasswordButton, &QPushButton::clicked, this, &MainWindow::copyPasswordButton);
+            table->setCellWidget(newRow, 5, copyPasswordButton);
+
+            QPushButton *generatePasswordButton = new QPushButton("Generate Password");
+            generatePasswordButton->setStyleSheet("background-color: green; color: white;");
+            connect(generatePasswordButton, &QPushButton::clicked, this, &MainWindow::generatePassword);
+            table->setCellWidget(newRow, 6, generatePasswordButton);
         }
     }
 }
