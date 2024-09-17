@@ -12,6 +12,7 @@
 #include <QFile>
 #include <QTextStream>
 #include <QInputDialog>
+#include <QShortcut>
 #include "encrypt.h"
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     // table of passwords setup
@@ -48,6 +49,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     QScreen *screen = QApplication::screens().at(0);
     QRect screenSize = screen->availableGeometry();
     resize(screenSize.width() / 2, screenSize.height() / 2);
+    // shortcut setup 
+    QShortcut *shortcutAddRow = new QShortcut(QKeySequence("Ctrl+T"), this);
+    connect(shortcutAddRow, &QShortcut::activated, this, &MainWindow::addRow);
+    QShortcut *shortcutFocusSearchBar = new QShortcut(QKeySequence("Ctrl+F"), this);
+    connect(shortcutFocusSearchBar, &QShortcut::activated, this, [this]() {
+        searchBar->setFocus();
+    });
 }
 
 MainWindow::~MainWindow()
