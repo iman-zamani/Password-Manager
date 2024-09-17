@@ -25,7 +25,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     table->setColumnHidden(7, true);  // hide the creation time column
 
     // add search bar
-    QLineEdit *searchBar = new QLineEdit(this);
+    searchBar = new QLineEdit(this);
     searchBar->setPlaceholderText("Search by Website or User Name...");
     connect(searchBar, &QLineEdit::textChanged, this, &MainWindow::searchTable);
 
@@ -54,17 +54,20 @@ MainWindow::~MainWindow()
 {
 
 }
+
 void setStringToSpaces(std::string& str) {
     for (char& c : str) {
         c = ' ';  
     }
 }
+
 void setQStringToSpaces(QString& qStr) {
     qStr.fill(' ');  
     qStr.clear();
     qStr.squeeze();
 }
-void MainWindow::closeEvent(QCloseEvent *event){
+
+void MainWindow::closeEvent(QCloseEvent *event ){
     // Set the main window as the parent of the QMessageBox for the cancel option 
     QMessageBox msgBox(this); 
     msgBox.setWindowTitle("Save Data");
@@ -78,7 +81,7 @@ void MainWindow::closeEvent(QCloseEvent *event){
     int ret = msgBox.exec();
 
     if (ret == QMessageBox::Yes) {
-        saveTableData(event);
+        saveTableData(event,searchBar);
         event->accept(); // save and then close the app
     } else if (ret == QMessageBox::No) {
         event->accept();  // close the app 
@@ -128,6 +131,7 @@ std::string MainWindow::getUserPassword() {
     //setStringToSpaces(stdPassword);
     return stdPassword;
 }
+
 QString copyFileContent(const QString& filePath) {
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -140,7 +144,8 @@ QString copyFileContent(const QString& filePath) {
 
     return contents;
 }
-void MainWindow::saveTableData(QCloseEvent *event) {
+
+void MainWindow::saveTableData(QCloseEvent *event, QLineEdit *searchBar) {
     QString copyFile = copyFileContent(filePath); // backup 
     QFile file(filePath);
 
@@ -148,40 +153,39 @@ void MainWindow::saveTableData(QCloseEvent *event) {
         QMessageBox::warning(this, tr("Save Error"), tr("Unable to open file for saving. Please check your permissions or disk space."));
         return;
     }
-
+    searchBar->setText("");
+    searchTable("");
     QTextStream stream(&file);
     QString longString;
 
     // a list to store rows along with their creation time
     QList<QPair<QDateTime, QString>> rowsWithTime;
 
- 
     for (int i = 0; i < table->rowCount(); ++i) {
         QString rowString;
-        for (int j = 0; j < 4; ++j) { 
+        for (int j = 0; j < 3; ++j) { 
             QTableWidgetItem *item = table->item(i, j);
             if (item) {
                 rowString += item->text();
-                if (j < 3) {
-                    rowString += ";"; // using ';' as a cell separator
-                }
             } else {
                 rowString += " ";
-                if (j < 3) {
-                    rowString += ";"; // using ';' as a cell separator
-                }
             }
+            rowString += ";"; // cell separator
         }
 
-       
+
         QTableWidgetItem *timeItem = table->item(i, 7); 
         if (timeItem) {
-            QDateTime creationTime = QDateTime::fromString(timeItem->text(), Qt::ISODate);
-            rowsWithTime.append(QPair<QDateTime, QString>(creationTime, rowString));
+            rowString += timeItem->text();
+        } else {
+            rowString += " ";
         }
+
+        QDateTime creationTime = QDateTime::fromString(timeItem->text(), Qt::ISODate);
+        rowsWithTime.append(QPair<QDateTime, QString>(creationTime, rowString));
     }
 
-
+    // sort rows based on creation time
     std::sort(rowsWithTime.begin(), rowsWithTime.end(), [](const QPair<QDateTime, QString>& a, const QPair<QDateTime, QString>& b) {
         return a.first < b.first;
     });
@@ -189,10 +193,11 @@ void MainWindow::saveTableData(QCloseEvent *event) {
     for (int i = 0; i < rowsWithTime.size(); ++i) {
         longString += rowsWithTime[i].second;
         if (i < rowsWithTime.size() - 1) {
-            longString += "|"; // use '|' as a row separator
+            longString += "|";
         }
     }
 
+    // authenticate user 
     bool authenticated = false;
     std::string enteredPassword;
     for (int attempts = 0; attempts < 3; ++attempts) {
@@ -212,7 +217,7 @@ void MainWindow::saveTableData(QCloseEvent *event) {
 
     if (!authenticated) {
         QMessageBox::warning(this, tr("Authentication Failed"), tr("Maximum retry attempts reached."));
-        stream << copyFile; 
+        stream << copyFile; // restore previous content
         file.close();
         return;
     }
@@ -232,11 +237,10 @@ void MainWindow::saveTableData(QCloseEvent *event) {
     setQStringToSpaces(longString);
 }
 
-
 bool MainWindow::loadTableData() {
     std::string userPassword = getUserPassword();
 
-    // if the password was not entered or it was not acceptable
+    // if the password was not entered or it was invalid
     if (userPassword == "INVALID") {
         exit(1);
     }
@@ -269,40 +273,33 @@ bool MainWindow::loadTableData() {
 
     QString longString = QString::fromStdString(decodedCiphertextString);
 
-    // Split the decrypted string into rows
+    // split into rows
     QStringList rows = longString.split("|");
-    setQStringToSpaces(longString);
 
     for (QString &row : rows) {
         QStringList values = row.split(";");
-        
-  
+
         if (values.size() < 4) {
             continue;
         }
 
-
         addRow();
         int lastRow = table->rowCount() - 1;
 
-
-        for (int i = 0; i < 3 && i < values.size(); ++i) {
+        // set website, username, and password
+        for (int i = 0; i < 3; ++i) {
             QTableWidgetItem *item = new QTableWidgetItem(values.at(i));
-            setQStringToSpaces(values[i]);
             table->setItem(lastRow, i, item);
         }
 
-   
-        QTableWidgetItem *timeItem = new QTableWidgetItem(values.at(3)); 
-        table->setItem(lastRow, 7, timeItem); 
-
-        setQStringToSpaces(row);
+        // set the creation time in the hidden column 7
+        QTableWidgetItem *timeItem = new QTableWidgetItem(values.at(3));
+        table->setItem(lastRow, 7, timeItem);
     }
 
     // clear sensitive data
     setStringToSpaces(decodedCiphertextString);
     setStringToSpaces(userPassword);
-    memset(&userPassword[0], 0, userPassword.size()); 
 
     return true;
 }
@@ -361,6 +358,7 @@ void MainWindow::copyPasswordButton(){
         }
     }
 }
+
 void MainWindow::generatePassword(){
     QPushButton *button = qobject_cast<QPushButton*>(sender());
     if (!button) return;
@@ -384,6 +382,8 @@ void MainWindow::generatePassword(){
 }
 
 void MainWindow::removeRow(){
+    searchBar->setText("");
+    searchTable("");
     QPushButton *button = qobject_cast<QPushButton*>(sender());
     if (!button) return;
 
@@ -392,6 +392,7 @@ void MainWindow::removeRow(){
         table->removeRow(row);
     }
 }
+
 void MainWindow::searchTable(const QString &query) {
     QList<QPair<int, int>> matchingRows; // index, relevance
     QList<int> nonMatchingRows;
@@ -399,7 +400,7 @@ void MainWindow::searchTable(const QString &query) {
     // temporarily store all rows
     QList<QList<QTableWidgetItem*>> allRows;
 
-    // store creation time for each row (for sorting )
+    // store creation time for each row (for sorting)
     QList<QPair<QDateTime, QList<QTableWidgetItem*>>> rowsWithTime;
 
     for (int i = 0; i < table->rowCount(); ++i) {
@@ -409,8 +410,9 @@ void MainWindow::searchTable(const QString &query) {
         }
 
         // add creation time for sorting if necessary (column 7)
-        QTableWidgetItem *timeItem = rowItems.at(7); 
+        QTableWidgetItem *timeItem = rowItems.at(7); // Column 7 is for creation time
         if (timeItem) {
+            // Parse the creation time as ISODate (Qt::ISODate)
             QDateTime creationTime = QDateTime::fromString(timeItem->text(), Qt::ISODate);
             rowsWithTime.append(QPair<QDateTime, QList<QTableWidgetItem*>>(creationTime, rowItems));
         }
@@ -418,13 +420,13 @@ void MainWindow::searchTable(const QString &query) {
         allRows.append(rowItems);
     }
 
-    // clear all rows in table 
+    // clear all rows from the table
     table->setRowCount(0);
 
     if (!query.isEmpty()) {
         for (int i = 0; i < allRows.size(); ++i) {
-            QTableWidgetItem *websiteItem = allRows[i].at(0);  
-            QTableWidgetItem *userItem = allRows[i].at(1);     
+            QTableWidgetItem *websiteItem = allRows[i].at(0);
+            QTableWidgetItem *userItem = allRows[i].at(1);
 
             int relevance = 0;
 
@@ -437,18 +439,20 @@ void MainWindow::searchTable(const QString &query) {
             }
 
             if (relevance > 0) {
+                // store index and relevance
                 matchingRows.append(QPair<int, int>(i, relevance));  
             } else {
+                // rows that don't match the query
                 nonMatchingRows.append(i);  
             }
         }
 
-        // sort matching rows 
+        // sort matching rows by relevance
         std::sort(matchingRows.begin(), matchingRows.end(), [](const QPair<int, int> &a, const QPair<int, int> &b) {
             return a.second > b.second;
         });
 
-        // insert matching rows 
+        // insert matching rows back into the table
         for (const auto &rowPair : matchingRows) {
             int rowIdx = rowPair.first;
             int newRow = table->rowCount();
@@ -458,7 +462,7 @@ void MainWindow::searchTable(const QString &query) {
                 table->setItem(newRow, col, allRows[rowIdx].at(col));
             }
 
-            // add buttons of each row
+            // add buttons to the row
             QPushButton *removeButton = new QPushButton("Remove Row");
             removeButton->setStyleSheet("background-color: red;");
             connect(removeButton, &QPushButton::clicked, this, &MainWindow::removeRow);
@@ -480,7 +484,7 @@ void MainWindow::searchTable(const QString &query) {
             table->setCellWidget(newRow, 6, generatePasswordButton);
         }
 
-        // non-matching rows 
+        // insert non matching rows (unfiltered ones)
         for (int rowIdx : nonMatchingRows) {
             int newRow = table->rowCount();
             table->insertRow(newRow);
@@ -489,7 +493,7 @@ void MainWindow::searchTable(const QString &query) {
                 table->setItem(newRow, col, allRows[rowIdx].at(col));
             }
 
-            // add the buttons for non-matching rows 
+            // add buttons to non matching rows
             QPushButton *removeButton = new QPushButton("Remove Row");
             removeButton->setStyleSheet("background-color: red;");
             connect(removeButton, &QPushButton::clicked, this, &MainWindow::removeRow);
@@ -511,12 +515,12 @@ void MainWindow::searchTable(const QString &query) {
             table->setCellWidget(newRow, 6, generatePasswordButton);
         }
     } else {
-        // sort by creation time if query is empty
+        // if the query is empty, sort by creation time
         std::sort(rowsWithTime.begin(), rowsWithTime.end(), [](const QPair<QDateTime, QList<QTableWidgetItem*>> &a, const QPair<QDateTime, QList<QTableWidgetItem*>> &b) {
             return a.first < b.first;
         });
 
-        
+        // insert rows sorted by creation time
         for (const auto &rowPair : rowsWithTime) {
             int newRow = table->rowCount();
             table->insertRow(newRow);
@@ -525,7 +529,7 @@ void MainWindow::searchTable(const QString &query) {
                 table->setItem(newRow, col, rowPair.second.at(col));
             }
 
-            // add the buttons 
+            // add buttons to the row
             QPushButton *removeButton = new QPushButton("Remove Row");
             removeButton->setStyleSheet("background-color: red;");
             connect(removeButton, &QPushButton::clicked, this, &MainWindow::removeRow);

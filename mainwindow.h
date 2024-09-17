@@ -37,16 +37,18 @@ private slots:
     void copyUserNameButton();
     void copyPasswordButton();
     void generatePassword();
-    void saveTableData(QCloseEvent *event);
+    void saveTableData(QCloseEvent *event,QLineEdit *searchBar);
     bool loadTableData();
     void searchTable(const QString &query);
 
 private:
+    QLineEdit *searchBar;
     QTableWidget *table;
     QPushButton *addRowButton;
     QString filePath = "password.enc"; 
     std::string userPasswordHash;
     CryptoPP::SecByteBlock userSalt;
+    QList<QList<QTableWidgetItem*>> originalRows;
 };
 
 #endif 
