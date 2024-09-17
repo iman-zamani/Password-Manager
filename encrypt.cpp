@@ -113,7 +113,7 @@ std::string DecryptString(const std::string& encodedCiphertext, const std::strin
         df.MessageEnd();
     } catch (const CryptoPP::Exception& e) {
         std::cerr << "Decryption failed: " << e.what() << std::endl;
-        return "";
+        exit (-1);
     }
 
     return decryptedtext;
