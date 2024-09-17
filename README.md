@@ -10,7 +10,7 @@ A simple password manager application built for personal use. This app allows yo
 ## Features
 
 - **Secure password storage**: Uses advanced encryption to ensure that all passwords are stored securely.
-- **Minimalistic design**: Easy-to-use interface that does not compromise on functionality.
+- **Minimalistic design**: Easy-to-use interface.
 - **Memory cleanup on exit**: Automatically clears all password data from memory when the program closes, eliminating any potential security risks from leftover data in RAM.
 
 <div align="center">
